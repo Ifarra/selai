@@ -44,6 +44,7 @@ tauri = { version = "2", features = [] }
 tokio = { version = "1.53.3", features = ["rt", "sync", "time", "macros", "io-util", "process"] }
 tokio-util = "0.7"
 tempfile = "3.27.0"
+tauri-plugin-updater = "2"
 
 [lints]
 workspace = true

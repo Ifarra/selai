@@ -47,6 +47,7 @@ impl AppState {
 
 pub fn run() {
     let result = tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(updates::UpdateService::default())
         .setup(|app| {
             selai_platform::start();
@@ -85,6 +86,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             updates::update_check,
             updates::update_open,
+            updates::update_download,
+            updates::update_cancel,
+            updates::update_install,
             network_commands::proxy_list,
             network_commands::forward_watch,
             network_commands::transfer_watch,

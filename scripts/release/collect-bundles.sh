@@ -30,10 +30,21 @@ shopt -s nullglob
 installers=(
   "$bundle_dir"/deb/*.deb
   "$bundle_dir"/appimage/*.AppImage
+  "$bundle_dir"/appimage/*.AppImage.sig
   "$bundle_dir"/dmg/*.dmg
 )
 for f in "${installers[@]}"; do
   cp -f "$f" "$stage_dir/"
+done
+
+# The macOS updater package and its signature. Both architectures produce
+# Selai.app.tar.gz, so the architecture is added like the .app.zip below.
+for f in "$bundle_dir"/macos/*.app.tar.gz "$bundle_dir"/macos/*.app.tar.gz.sig; do
+  name=$(basename "$f")
+  if [[ -n "$macos_arch" ]]; then
+    name="${name/.app.tar.gz/_${macos_arch}.app.tar.gz}"
+  fi
+  cp -f "$f" "$stage_dir/$name"
 done
 
 # A macOS .app is a directory. Zip it so it is one uploadable, checksummable file.

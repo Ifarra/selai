@@ -35,6 +35,12 @@ for platform in linux windows macos macos-intel; do
   done
 done
 
+# The in-app updater manifest. Required for a tagged release: it verifies every
+# updater signature against the key in tauri.conf.json before writing latest.json.
+if [[ -n "${UPDATER_TAG:-}" ]]; then
+  node "$(dirname "$0")/updater-manifest.mjs" "$dist" "$UPDATER_TAG" "${UPDATER_REPOSITORY:?UPDATER_REPOSITORY is required}"
+fi
+
 # SBOMs are published as one archive, so the release page lists installers first.
 if [[ -d "$src/sbom" ]]; then
   tar -C "$src/sbom" -czf "$dist/sbom-cyclonedx.tar.gz" .

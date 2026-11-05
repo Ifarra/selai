@@ -515,9 +515,14 @@ Packages are provided for:
 Check the downloaded file against its accompanying `SHA256SUMS`. Linux needs a
 Secret Service keyring such as GNOME Keyring or KWallet. Signing and
 notarization are optional in the release workflow; an unsigned build may be
-blocked or warned about by Windows or macOS. The app has no automatic updater.
+blocked or warned about by Windows or macOS.
+
+Selai checks GitHub for new releases at startup. Windows, macOS and AppImage
+installs can update in-app: **Update now** downloads the release and verifies its
+signature, and **Restart now** locks the vault, installs it and relaunches. `.deb`
+installs open the installer download in the browser instead.
 See [release packaging](docs/release/packaging.md) for build outputs, checksum
-commands, signing status, and workflow instructions.
+commands, signing status, updater keys, and workflow instructions.
 
 ### First session
 

@@ -13,10 +13,26 @@ export interface ReleaseUpdate {
   publishedAt: string | null;
   releaseUrl: string;
   download: { name: string; size: number; url: string } | null;
+  /** This installation can download, verify and install the release itself. */
+  inApp: boolean;
 }
 export interface UpdateCheck { currentVersion: string; update: ReleaseUpdate | null }
 export function updateCheck(): Promise<UpdateCheck> { return invoke<UpdateCheck>('update_check'); }
 export function updateOpen(target: 'release' | 'download'): Promise<void> { return invoke<void>('update_open', { target }); }
+
+export type UpdateDownloadEvent =
+  | { event: 'started'; data: { total: number | null } }
+  | { event: 'progress'; data: { downloaded: number; total: number | null } }
+  | { event: 'verified'; data?: undefined };
+/** Downloads and verifies the offered release. Resolves once it is ready to install. */
+export function updateDownload(onEvent: (event: UpdateDownloadEvent) => void): Promise<void> {
+  const channel = new Channel<UpdateDownloadEvent>();
+  channel.onmessage = onEvent;
+  return invoke<void>('update_download', { onEvent: channel });
+}
+export function updateCancel(): Promise<void> { return invoke<void>('update_cancel'); }
+/** Locks the vault, installs the verified package and restarts Selai. */
+export function updateInstall(): Promise<void> { return invoke<void>('update_install'); }
 
 export interface StorageStatus {
   schemaVersion: number;

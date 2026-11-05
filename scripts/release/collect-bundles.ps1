@@ -12,7 +12,9 @@ New-Item -ItemType Directory -Force -Path $StageDir | Out-Null
 
 $installers = @(Get-ChildItem -Path (Join-Path $BundleDir 'msi\*.msi'), (Join-Path $BundleDir 'nsis\*.exe') -File)
 if ($installers.Count -eq 0) { throw "no installers found under $BundleDir" }
-foreach ($f in $installers) {
+# Updater signatures (sign-updater.sh) are published next to their installers.
+$signatures = @(Get-ChildItem -Path (Join-Path $BundleDir 'msi\*.msi.sig'), (Join-Path $BundleDir 'nsis\*.exe.sig') -File -ErrorAction SilentlyContinue)
+foreach ($f in $installers + $signatures) {
   Copy-Item -LiteralPath $f.FullName -Destination $StageDir -Force
 }
 

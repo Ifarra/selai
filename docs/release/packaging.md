@@ -181,17 +181,66 @@ prereleases; draft and alpha/beta/RC releases are excluded. Checks use the lates
 100 published releases and a 60-second in-process cache. No GitHub token or
 vault data is sent. GitHub's unauthenticated API limits still apply.
 
-**Download update** opens the matching installer in the default browser. The app
-stays open; the user saves work and closes Selai before running the downloaded
-installer. Missing architecture assets fall back to release details. This uses
-the existing release installers and requires no additional release secrets.
+### In-app installation
+
+Installations from the NSIS `.exe`, the `.msi`, the `.AppImage` and the macOS
+`.app`/`.dmg` update themselves when the release has a `latest.json`:
+
+1. **Update now** downloads the package for this OS, architecture and installer
+   type. Nothing downloads without that click. Progress shows in the dialog and in
+   the top-right button, the download continues if the dialog is closed, and it
+   can be cancelled.
+2. The package is verified against the public key in
+   `apps/desktop/src-tauri/tauri.conf.json` (`plugins.updater.pubkey`). The
+   signature must also name the announced version (`requireSignedVersion`), so a
+   manifest that pairs a new version number with an older, validly signed
+   package is rejected. A failed check discards the package and offers the
+   browser download.
+3. **Restart now** locks the vault (sealing the database and ending sessions),
+   installs the package and relaunches Selai. On Windows the installer runs in
+   passive mode and starts Selai again when it finishes. If installation fails,
+   the verified package is kept for another attempt.
+
+The manifest is read from the release that discovery chose
+(`releases/download/<tag>/latest.json`), never from `releases/latest`, which
+ignores the 0.x prereleases. It must announce exactly that version. The webview
+supplies no URL or version to any update command, and no updater plugin
+permission is granted to it; all updater calls go through Rust commands.
+
+`.deb` installations, development builds, and releases published before the
+updater existed (no `latest.json`) keep the **Download update** browser flow:
+it opens the matching installer in the default browser, and the user closes
+Selai before running it. Missing architecture assets fall back to release details.
+
+### Updater signing key
+
+The release workflow needs two repository secrets:
+
+| Secret | Contents |
+| --- | --- |
+| `TAURI_SIGNING_PRIVATE_KEY` | The contents of the minisign private key file (`tauri signer generate`). |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | Its password. |
+
+A tag push fails before building when `TAURI_SIGNING_PRIVATE_KEY` is missing;
+manual runs build without updater signatures. Only the **Sign in-app updater
+packages** step receives the key. It runs after Authenticode signing and the
+macOS signature check, creates the macOS `Selai_<arch>.app.tar.gz`, and signs
+every updater package with `tauri signer sign --app-version <version>`. The
+publish job then verifies each `.sig` against the committed public key, checks
+the signed version, and writes `latest.json`. A package signed with another key
+or for another version stops the release.
+
+Keep an offline backup of the private key and its password. **Installed copies
+trust only the committed public key**: if the private key is lost, those copies
+can no longer update in-app, and their users must reinstall manually from the
+release page. To rotate the key, ship one transitional release whose
+`tauri.conf.json` contains the new public key but which is still signed with the
+old key. For that release only, set the repository variable
+`UPDATER_SIGNING_PUBKEY` to the old public key so the publish job verifies against
+it. Then switch the secrets to the new key and delete the variable.
 
 ## Not included
 
-- **In-app installation.** Update discovery and browser downloads are included.
-  No updater artifacts (`.sig`, `latest.json`) are produced and
-  `TAURI_SIGNING_PRIVATE_KEY` is not used. Adding the updater needs a signing key
-  pair and a hosting decision.
 - **Automatic publication from a manual workflow run.** Manual runs produce
   workflow artifacts; a `v*` tag triggers the publish job described above.
 
@@ -208,7 +257,9 @@ the existing release installers and requires no additional release secrets.
 | `-- --locked` passed through to cargo by `pnpm tauri build` | Confirmed by successful release builds on all three platforms for `v0.3.1`. |
 | Attestation (`attest` job) | Build provenance completed successfully for `v0.3.1`. |
 | SBOM job on a clean runner | Completed successfully in the GitHub release workflow for `v0.3.1`. |
-| Update discovery and download | Covered by Rust and frontend tests. Installation remains a manual installer flow. |
+| Update discovery and download | Covered by Rust and frontend tests. |
+| Updater signing and `latest.json` | Signing, signature verification against the committed key, version binding and the manifest are covered by `packaging.test.mjs` and were exercised locally with the real key. The first tagged release with `TAURI_SIGNING_PRIVATE_KEY` set is the first end-to-end run. |
+| In-app installation | Not yet exercised on installed builds. Verify on Windows (NSIS and MSI), macOS (both architectures) and a Linux AppImage by updating from the first release that ships the updater to the next one. |
 | Icons | `icon.png`, `icon.ico`, `icon.icns`, and platform sizes are present. The Windows and macOS bundles have not been run here. |
 
 ## Helper scripts
@@ -218,6 +269,11 @@ the existing release installers and requires no additional release secrets.
   macOS jobs pass `aarch64` or `x64` to keep ZIP names unique.
 - `scripts/release/collect-bundles.ps1`: the Windows version of the above.
 - `scripts/release/sign-windows.ps1`: Windows signing, only when secrets are set.
+- `scripts/release/sign-updater.sh <bundle-dir> <version>`: creates the macOS
+  updater archive and signs every updater package with the minisign key.
+- `scripts/release/updater-manifest.mjs <dist-dir> <tag> <owner/repo>`: verifies
+  the updater signatures and writes `latest.json`. `assemble-release.sh` runs it
+  when `UPDATER_TAG` is set.
 - `scripts/release/generate-sbom.sh <out-dir>`: both SBOM kinds.
 
 ## Tool and action choices
