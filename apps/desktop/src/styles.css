@@ -1,6 +1,115 @@
 /* Selai workspace: neutral surfaces, restrained colour, and readable density.
    Theme preferences live in the status bar, including terminal surfaces. */
 
+/* ---- appearance ------------------------------------------------------------ */
+/* A fixed image layer sits behind the whole shell. Panels stay legible through
+   a theme-coloured wash, and glass mode frosts the chrome and cards above it. */
+
+html.has-bg {
+  background-color: var(--bg);
+}
+
+html.has-bg body,
+html.has-bg #root {
+  background: transparent;
+}
+
+html.has-bg body::before,
+html.has-bg body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+html.has-bg body::before {
+  inset: -32px;
+  z-index: -2;
+  background-color: var(--bg);
+  background-image: var(--bg-image);
+  background-position: center;
+  background-repeat: var(--bg-repeat, no-repeat);
+  background-size: var(--bg-size, cover);
+  filter: blur(var(--bg-blur, 0px));
+  transform: scale(1.02);
+}
+
+html.has-bg body::after {
+  z-index: -1;
+  background: color-mix(in srgb, var(--bg) var(--bg-dim, 35%), transparent);
+}
+
+html.glass {
+  --glass-panel: color-mix(in srgb, var(--sidebar) var(--glass-alpha, 62%), transparent);
+  --glass-surface: color-mix(in srgb, var(--surface) var(--glass-alpha, 62%), transparent);
+  --glass-editor: color-mix(in srgb, var(--bg) 45%, transparent);
+  --glass-border: color-mix(in srgb, var(--border-strong) 65%, transparent);
+  --glass-highlight: color-mix(in srgb, white 12%, transparent);
+  --glass-backdrop: blur(var(--glass-blur, 18px)) saturate(1.35);
+}
+
+html.glass .workspace-head,
+html.glass .activitybar,
+html.glass .sidebar,
+html.glass .editor-tabs,
+html.glass .statusbar,
+html.glass .chatbar {
+  background: var(--glass-panel);
+  border-color: var(--glass-border);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  backdrop-filter: var(--glass-backdrop);
+}
+
+html.glass .editor {
+  background: var(--glass-editor);
+}
+
+html.glass .card,
+html.glass .dialog,
+html.glass .drawer,
+html.glass .term-card,
+html.glass .themed-select-menu,
+html.glass .welcome-inner {
+  background: var(--glass-surface);
+  border-color: var(--glass-border);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  backdrop-filter: var(--glass-backdrop);
+  box-shadow: 0 18px 50px color-mix(in srgb, var(--bg) 52%, transparent), inset 0 1px 0 var(--glass-highlight);
+}
+
+html.glass .card {
+  border-radius: 12px;
+}
+
+html.has-bg .welcome-inner,
+html.glass .welcome-inner {
+  padding: clamp(20px, 3vw, 32px);
+  border: 1px solid var(--glass-border, var(--border));
+  border-radius: 18px;
+}
+
+html.has-bg:not(.glass) .welcome-inner {
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  border-color: var(--border);
+}
+
+html.has-bg:not(.glass) .workspace-head,
+html.has-bg:not(.glass) .activitybar,
+html.has-bg:not(.glass) .sidebar,
+html.has-bg:not(.glass) .editor-tabs,
+html.has-bg:not(.glass) .statusbar,
+html.has-bg:not(.glass) .chatbar {
+  background: color-mix(in srgb, var(--sidebar) 90%, transparent);
+}
+
+html.has-bg:not(.glass) .editor {
+  background: color-mix(in srgb, var(--bg) 74%, transparent);
+}
+
+html.has-bg:not(.glass) .card {
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+}
+
 :root {
   --bg: #191b1d;
   --sidebar: #16181a;
@@ -28,6 +137,12 @@
   --terminal-fg: #d8dbe8;
   --terminal-overlay: rgba(10, 12, 18, 0.82);
   --shadow: 0 16px 48px rgba(0, 0, 0, 0.28);
+  --glass-blur: 18px;
+  --glass-alpha: 62%;
+  --bg-blur: 0px;
+  --bg-dim: 35%;
+  --bg-size: cover;
+  --bg-repeat: no-repeat;
   --radius: 8px;
   --radius-sm: 5px;
   --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -3024,6 +3139,127 @@ option {
 
 .settings-page .form-row .field {
   min-width: 160px;
+}
+
+.settings-page .field-grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.appearance-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.appearance-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  cursor: pointer;
+}
+
+.appearance-toggle input {
+  margin-top: 2px;
+}
+
+.appearance-toggle strong {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.appearance-toggle small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.appearance-sliders .field {
+  min-width: 0;
+}
+
+.appearance-field-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.appearance-value {
+  color: var(--muted);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+input[type='range'] {
+  min-height: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  accent-color: var(--accent);
+}
+
+input[type='range']:hover {
+  border-color: transparent;
+}
+
+input[type='range']:disabled {
+  opacity: 0.5;
+}
+
+.appearance-file-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.appearance-file-row input[type='file'] {
+  flex: 1;
+  min-width: 0;
+}
+
+.appearance-thumb-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.appearance-thumb {
+  flex: none;
+  width: 180px;
+  height: 100px;
+  object-fit: cover;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+}
+
+.appearance-thumb-note {
+  max-width: 380px;
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+
+.appearance-fit {
+  max-width: 280px;
+}
+
+.appearance-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 2px;
+}
+
+.settings-page > .card > .banner {
+  margin-top: 12px;
 }
 
 .task-request {
